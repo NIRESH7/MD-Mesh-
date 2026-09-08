@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/paper"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="28dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.12"
+            android:text="MD MESH"
+            android:textColor="@color/ink"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/statusTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:text="@string/status_unlocked"
+            android:textColor="@color/ink"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lockedApp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/accent"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/deviceId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="monospace"
+            android:textColor="@color/sea"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/lastSync"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/ink"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Leave this app running. For full restriction, enable Strict Lock below."
+            android:textColor="@color/ink" />
+
+        <Button
+            android:id="@+id/strictLock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:backgroundTint="@color/accent"
+            android:text="@string/enable_strict_lock"
+            android:textColor="@color/paper" />
+
+        <TextView
+            android:id="@+id/protectStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="@string/protect_locked"
+            android:textColor="@color/ink"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/unlockUninstall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="@color/ink"
+            android:text="@string/unlock_uninstall"
+            android:textColor="@color/paper" />
+
+        <Button
+            android:id="@+id/changePin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/sea"
+            android:text="@string/change_pin"
+            android:textColor="@color/paper" />
+
+        <Button
+            android:id="@+id/openAllowedSite"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/accent"
+            android:text="@string/open_allowed_site"
+            android:textColor="@color/paper"
+            android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

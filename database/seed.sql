@@ -1,0 +1,4 @@
+-- Admin account is created by: node backend/scripts/seed.js
+-- Default credentials (override with ADMIN_USERNAME / ADMIN_PASSWORD):
+--   username: admin
+--   password: password123
