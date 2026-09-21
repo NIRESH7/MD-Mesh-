@@ -15,9 +15,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:letterSpacing="0.12"
-            android:text="MD MESH"
+            android:text="PANDIYAN AGENCY"
             android:textColor="@color/ink"
-            android:textSize="28sp"
+            android:textSize="24sp"
             android:textStyle="bold" />
 
         <TextView
@@ -56,11 +56,30 @@
             android:textSize="14sp" />
 
         <TextView
+            android:id="@+id/deviceOwnerStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="@color/accent"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/deviceOwnerHelp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/sea"
+            android:text="Close Pandiyan from Recents (PIN)"
+            android:textColor="@color/paper"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/hint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Leave this app running. For full restriction, enable Strict Lock below."
+            android:text="@string/hint_restricted_safe_clear"
             android:textColor="@color/ink" />
 
         <Button
@@ -70,6 +89,24 @@
             android:layout_marginTop="28dp"
             android:backgroundTint="@color/accent"
             android:text="@string/enable_strict_lock"
+            android:textColor="@color/paper" />
+
+        <Button
+            android:id="@+id/clearOtherApps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/ink"
+            android:text="@string/clear_other_apps"
+            android:textColor="@color/paper" />
+
+        <Button
+            android:id="@+id/stopServices"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/sea"
+            android:text="@string/stop_services"
             android:textColor="@color/paper" />
 
         <TextView

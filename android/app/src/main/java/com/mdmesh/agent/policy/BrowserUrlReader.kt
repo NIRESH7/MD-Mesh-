@@ -14,12 +14,18 @@ object BrowserUrlReader {
         "com.android.chrome:id/url_bar",
         "com.android.chrome:id/omnibox_url_bar",
         "com.android.chrome:id/url_bar_wrapper",
+        "com.android.chrome:id/search_box_text",
+        "com.android.chrome:id/title_url",
+        "com.chrome.beta:id/url_bar",
         "com.brave.browser:id/url_bar",
         "com.brave.browser:id/omnibox_url_bar",
         "org.mozilla.firefox:id/url_bar_title",
+        "org.mozilla.firefox:id/mozac_browser_toolbar_url_view",
         "com.microsoft.emmx:id/url_bar",
         "com.sec.android.app.sbrowser:id/location_bar_edit_text",
-        "com.opera.browser:id/url_field"
+        "com.opera.browser:id/url_field",
+        "com.mi.globalbrowser:id/url",
+        "com.android.browser:id/url"
     )
 
     fun readCurrentUrl(root: AccessibilityNodeInfo?): String? {

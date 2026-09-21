@@ -15,9 +15,11 @@ import com.mdmesh.agent.data.DevicePrefs
 import com.mdmesh.agent.data.RetrofitClient
 import com.mdmesh.agent.data.SyncRequest
 import com.mdmesh.agent.data.UsageRequest
+import com.mdmesh.agent.policy.HomeEnforcer
 import com.mdmesh.agent.policy.PolicyPackages
 import com.mdmesh.agent.policy.ProtectionPin
 import com.mdmesh.agent.policy.RestrictionApplier
+import com.mdmesh.agent.policy.StrictLockHelper
 import com.mdmesh.agent.policy.UninstallGuard
 import com.mdmesh.agent.ui.MainActivity
 import com.mdmesh.agent.util.DeviceInfo
@@ -53,10 +55,15 @@ class PollingService : Service() {
         return START_STICKY
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        RecentsStickyService.keepAliveAfterClearAll(applicationContext, askPinToClose = false)
+        super.onTaskRemoved(rootIntent)
+    }
+
     private fun syncNow() {
         if (!::prefs.isInitialized) prefs = DevicePrefs(this)
-        // During uninstall window: stop syncing so we don't re-lock or relaunch
-        if (prefs.isUninstallUnlocked) {
+        // Admin PIN stopped agent services — do not sync until re-enabled
+        if (prefs.servicesStoppedByPin) {
             handler.removeCallbacks(ticker)
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
@@ -76,19 +83,11 @@ class PollingService : Service() {
                 val restriction = response.restriction
                 prefs.lastSyncText = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
 
-                // If user unlocked uninstall while we were syncing, abort
-                if (prefs.isUninstallUnlocked) {
-                    handler.removeCallbacks(ticker)
-                    stopSelf()
-                    return@launch
-                }
-
                 val remotePin = response.protection_pin?.trim().orEmpty()
                 if (remotePin.matches(Regex("^\\d{4,8}$"))) {
                     val hash = ProtectionPin.hash(remotePin)
                     if (prefs.protectionPinHash != hash) {
                         prefs.protectionPinHash = hash
-                        // Do NOT call lockUninstall() here — that canceled uninstall mid-way
                         UninstallGuard.applyBlockedState(this@PollingService)
                     }
                 } else if (remotePin.isEmpty() && prefs.hasProtectionPin) {
@@ -96,16 +95,27 @@ class PollingService : Service() {
                     UninstallGuard.applyBlockedState(this@PollingService)
                 }
 
+                // Always apply admin restrictions. Uninstall unlock only opens Settings/admin
+                // temporarily — it must not ignore a new lock from the panel.
                 if (restriction != null) {
                     RestrictionApplier(this@PollingService).apply(restriction)
                     val locked = restriction.is_locked == 1
                     val count = restriction.allowed_apps.size
+                    if (locked) {
+                        HomeEnforcer.applyForLockState(this@PollingService, locked = true)
+                        StrictLockHelper.ensureProtectionUi(this@PollingService, prefs)
+                        RecentsStickyService.start(this@PollingService)
+                    } else {
+                        HomeEnforcer.applyForLockState(this@PollingService, locked = false)
+                    }
                     val text = if (locked) {
                         getString(R.string.restricted_notification, if (count > 0) count else 1)
                     } else {
                         getString(R.string.notification_text)
                     }
                     startForeground(NOTIFICATION_ID, notification(text))
+                } else {
+                    startForeground(NOTIFICATION_ID, notification(getString(R.string.notification_text)))
                 }
 
                 PolicyPackages.flushOpenSession(prefs)

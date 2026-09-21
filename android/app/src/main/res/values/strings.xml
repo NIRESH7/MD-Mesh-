@@ -1,27 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">MD Mesh</string>
+    <string name="app_name">Pandiyan Agency</string>
     <string name="status_unlocked">Device is unlocked</string>
     <string name="status_locked">Restricted to %1$d apps</string>
-    <string name="notification_channel">MD Mesh sync</string>
+    <string name="notification_channel">Pandiyan Agency sync</string>
     <string name="notification_text">Keeping this device in the fleet</string>
     <string name="locked_notification">This device is locked to one app</string>
-    <string name="restricted_notification">Restricted to %1$d apps (Home allowed)</string>
+    <string name="restricted_notification">Restricted to %1$d apps</string>
     <string name="enable_admin">Enable device admin</string>
     <string name="server_url">Server URL</string>
     <string name="continue_label">Connect device</string>
     <string name="admin_required">Device admin is required before this tablet can be managed.</string>
-    <string name="accessibility_description">MD Mesh strict lock. When the admin restricts this device, only allowed apps and Home can be used. Other apps are blocked. Also blocks uninstall until the protection PIN is entered.</string>
+    <string name="accessibility_description">Pandiyan Agency strict lock. When restricted with Device Owner, only allowed apps stay usable on the normal Home screen. Without Device Owner, Pandiyan Home is used. Also blocks uninstall until the protection PIN is entered.</string>
     <string name="enable_strict_lock">Enable strict lock</string>
-    <string name="strict_lock_on">Strict lock is ON</string>
+    <string name="clear_other_apps">Clear other apps (keep Pandiyan)</string>
+    <string name="hint_restricted_safe_clear">Restricted: Pandiyan is Home. Only allowed apps. Use Clear other apps here — not phone Clear All.</string>
+    <string name="strict_lock_on">Strict lock is ON — tap + PIN to turn OFF</string>
     <string name="strict_lock_off">Strict lock is OFF — tap to enable</string>
     <string name="protection_pin">Uninstall protection PIN</string>
     <string name="protection_pin_hint">PIN is set only in the admin panel Settings. Devices receive it on sync.</string>
     <string name="protect_locked">Uninstall protection: ON (PIN required)</string>
-    <string name="protect_unlocked">All apps free — uninstall unlocked for 30 minutes</string>
+    <string name="protect_unlocked">Uninstall unlocked for 30 minutes (apps stay restricted)</string>
     <string name="unlock_uninstall">PIN: unlock uninstall (30 min)</string>
     <string name="lock_uninstall_again">Lock uninstall again</string>
     <string name="change_pin">PIN managed in admin panel</string>
     <string name="open_allowed_site">Open allowed website</string>
     <string name="no_allowed_sites">No allowed websites from admin yet</string>
+    <string name="stop_services">Stop sync services (PIN required)</string>
+    <string name="start_services">Start sync services (PIN required)</string>
 </resources>

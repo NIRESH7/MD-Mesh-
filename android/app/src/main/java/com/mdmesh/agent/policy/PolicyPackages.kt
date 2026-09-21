@@ -25,16 +25,47 @@ object PolicyPackages {
 
     fun isHomeOrSystem(context: Context, pkg: String): Boolean {
         if (pkg == context.packageName) return true
-        if (ALWAYS_ALLOW.any { pkg == it || pkg.startsWith(it) }) return true
-        if (isDefaultLauncher(context, pkg)) return true
-        if (LAUNCHER_HINTS.any { pkg.contains(it) }) return true
+        // Settings apps are NOT system-exempt — only allowed if on the admin allowlist
+        if (isSettingsPackage(pkg)) return false
+        if (isPhoneOrDialer(pkg)) return true
+        if (ALWAYS_ALLOW.any { pkg == it || pkg.startsWith("$it.") || pkg == it }) return true
+        // Competing phone/tablet launchers are NOT allowed while Restricted —
+        // Soft Lock returns the user to Pandiyan Home.
+        if (isCompetingLauncher(pkg)) return false
+        if (isDefaultLauncher(context, pkg) && pkg == context.packageName) return true
+        return false
+    }
+
+    /** Incoming / outgoing call UI — never block while Restricted. */
+    fun isPhoneOrDialer(pkg: String): Boolean {
+        val p = pkg.lowercase()
+        if (PHONE_DIALER_PACKAGES.any { p == it || p.startsWith("$it.") }) return true
+        if (p.contains("incallui") || p.contains("telecom")) return true
+        if (p.contains(".dialer") || p.endsWith("dialer")) return true
+        if (p.startsWith("com.android.phone") || p.contains("com.android.phone")) return true
+        if (p.contains("emergency")) return true
+        return false
+    }
+
+    fun isCompetingLauncher(pkg: String): Boolean {
+        val lower = pkg.lowercase()
+        if (LAUNCHER_HINTS.any { lower.contains(it) }) return true
         return false
     }
 
     fun isAllowed(context: Context, prefs: DevicePrefs, pkg: String): Boolean {
+        if (pkg == context.packageName) return true // Pandiyan Agency always openable
         if (!prefs.isLocked) return true
+        if (prefs.allowedPackages.contains(pkg)) return true
+        if (isSettingsPackage(pkg)) return false
         if (isHomeOrSystem(context, pkg)) return true
-        return prefs.allowedPackages.contains(pkg)
+        return false
+    }
+
+    /** Phone Settings / MIUI security settings — blocked unless admin allowlists them. */
+    fun isSettingsPackage(pkg: String): Boolean {
+        val p = pkg.lowercase()
+        return SETTINGS_PACKAGES.any { p == it || p.startsWith("$it.") }
     }
 
     fun onForegroundPackage(context: Context, prefs: DevicePrefs, pkg: String?) {
@@ -101,16 +132,20 @@ object PolicyPackages {
         "com.google.android.permissioncontroller",
         "com.android.packageinstaller",
         "com.google.android.packageinstaller",
-        "com.android.settings",
-        "com.miui.securitycenter",
-        "com.miui.permcenter",
-        "com.lbe.security.miui",
         "com.google.android.gms",
         "com.google.android.gsf",
         "com.android.phone",
         "com.android.server.telecom",
         "com.android.incallui",
         "com.android.emergency",
+        "com.android.dialer",
+        "com.google.android.dialer",
+        "com.android.contacts",
+        "com.coloros.dialer",
+        "com.oppo.dialer",
+        "com.realme.dialer",
+        "com.samsung.android.dialer",
+        "com.samsung.android.incallui",
         // Soft keyboards — never kick to Home while typing
         "com.google.android.inputmethod",
         "com.android.inputmethod",
@@ -122,12 +157,53 @@ object PolicyPackages {
         "com.miui.input"
     )
 
+    private val PHONE_DIALER_PACKAGES = listOf(
+        "com.android.phone",
+        "com.android.server.telecom",
+        "com.android.incallui",
+        "com.android.emergency",
+        "com.android.dialer",
+        "com.google.android.dialer",
+        "com.android.contacts",
+        "com.coloros.dialer",
+        "com.oppo.dialer",
+        "com.realme.dialer",
+        "com.samsung.android.dialer",
+        "com.samsung.android.incallui"
+    )
+
+    /** Blocked while restricted unless explicitly selected in the admin panel. */
+    private val SETTINGS_PACKAGES = listOf(
+        "com.android.settings",
+        "com.android.settings.intelligence",
+        "com.xiaomi.misettings",
+        "com.miui.securitycenter",
+        "com.miui.permcenter",
+        "com.lbe.security.miui"
+    )
+
     private val LAUNCHER_HINTS = listOf(
-        "launcher",
-        "home",
+        ".launcher",
+        "launcher3",
         "miui.home",
         "nexuslauncher",
-        "trebuchet"
+        "trebuchet",
+        "globallauncher",
+        "microsoftlauncher",
+        "lawnchair",
+        "nova.launcher",
+        "tinylauncher",
+        "smartlauncher",
+        "poco.launcher",
+        "hios.launcher",
+        "bbk.launcher", // vivo
+        "coloros.launcher", // oppo
+        "oppo.launcher",
+        "realme.launcher",
+        "samsung.android.app.launcher",
+        "sec.android.app.launcher",
+        "huawei.android.launcher",
+        "lenovo.launcher"
     )
 
     private val NOISE = listOf(

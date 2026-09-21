@@ -374,8 +374,6 @@ function renderDrawer() {
       </li>`;
   }).join('');
 
-  const canRestrict = state.selectedPackages.size >= 1;
-
   drawer.innerHTML = `
     <div class="drawer-scroll">
       <div class="drawer-head">
@@ -394,7 +392,7 @@ function renderDrawer() {
       ${renderAllowedSection(allowed, locked)}
       ${renderWebsitesSection()}
       <p class="section-title" id="apps-section-title">Installed apps (${state.apps.length})</p>
-      <p class="hint">Select one or more apps (include Chrome/Brave to browse). Home stays available; other apps are blocked.</p>
+      <p class="hint">Select one or more apps (include Chrome/Brave to browse). Home stays available; other apps are blocked.${locked ? ' Change the checkboxes, then click <strong>Update restriction</strong>.' : ''}</p>
       <input type="search" id="app-search" class="app-search" placeholder="Search apps (name or package)…" value="${escapeHtml(state.appSearch || '')}" autocomplete="off" />
       <ul class="app-list">${apps || '<li>No apps reported yet</li>'}</ul>
       <p class="section-title">Screen time</p>
@@ -402,13 +400,7 @@ function renderDrawer() {
       ${renderScreenTimeBlock('Last 7 days', state.screenTime7d)}
     </div>
     <div class="drawer-foot">
-      <div class="lock-actions">
-        ${locked
-          ? `<button class="btn btn-ok" id="set-active-btn" type="button">Set Active (unlock all apps)</button>`
-          : `<button class="btn btn-danger" id="restrict-btn" type="button" ${canRestrict ? '' : 'disabled'}>
-          Restrict to selected apps${canRestrict ? ` (${state.selectedPackages.size})` : ''}
-        </button>`}
-      </div>
+      <div class="lock-actions"></div>
     </div>
   `;
 
@@ -429,10 +421,19 @@ function renderDrawer() {
       togglePackageSelection(pkg, next);
     });
   });
-  const restrictBtn = document.getElementById('restrict-btn');
-  if (restrictBtn) restrictBtn.onclick = restrictSelected;
-  const setActiveBtn = document.getElementById('set-active-btn');
-  if (setActiveBtn && !setActiveBtn.disabled) setActiveBtn.onclick = unlockSelected;
+  updateDrawerFootActions();
+}
+
+/** True when checkbox selection differs from the saved allowlist. */
+function selectionChangedFromAllowlist() {
+  const d = state.selectedDevice;
+  if (!d) return true;
+  const allowed = new Set(allowedAppsOf(d).map((a) => a.app_package));
+  if (allowed.size !== state.selectedPackages.size) return true;
+  for (const pkg of state.selectedPackages) {
+    if (!allowed.has(pkg)) return true;
+  }
+  return false;
 }
 
 function bindAppSearch() {
@@ -503,18 +504,25 @@ function updateDrawerFootActions() {
   const locked = Number(d.is_locked) === 1;
   const foot = drawer.querySelector('.drawer-foot .lock-actions');
   if (!foot) return;
-  const canRestrict = state.selectedPackages.size >= 1;
-  if (locked) {
-    foot.innerHTML = `<button class="btn btn-ok" id="set-active-btn" type="button">Set Active (unlock all apps)</button>`;
-    const setActiveBtn = document.getElementById('set-active-btn');
-    if (setActiveBtn) setActiveBtn.onclick = unlockSelected;
-  } else {
-    foot.innerHTML = `<button class="btn btn-danger" id="restrict-btn" type="button" ${canRestrict ? '' : 'disabled'}>
-      Restrict to selected apps${canRestrict ? ` (${state.selectedPackages.size})` : ''}
-    </button>`;
-    const restrictBtn = document.getElementById('restrict-btn');
-    if (restrictBtn) restrictBtn.onclick = restrictSelected;
-  }
+  const count = state.selectedPackages.size;
+  const canSave = count >= 1;
+  const restrictLabel = locked
+    ? `Update restriction (${count || 0})`
+    : `Restrict to selected apps${canSave ? ` (${count})` : ''}`;
+
+  // Always show update/restrict first when editing a locked device so extra apps can be saved
+  foot.innerHTML = `
+    <button class="btn btn-danger" id="restrict-btn" type="button" ${canSave ? '' : 'disabled'}>
+      ${restrictLabel}
+    </button>
+    ${locked
+      ? `<button class="btn btn-ok" id="set-active-btn" type="button">Set Active (unlock all apps)</button>`
+      : ''}
+  `;
+  const restrictBtn = document.getElementById('restrict-btn');
+  if (restrictBtn) restrictBtn.onclick = restrictSelected;
+  const setActiveBtn = document.getElementById('set-active-btn');
+  if (setActiveBtn) setActiveBtn.onclick = unlockSelected;
 }
 
 
@@ -563,6 +571,7 @@ function closeDrawer() {
 
 async function restrictSelected() {
   if (!state.selectedId || state.selectedPackages.size < 1) return;
+  const wasLocked = Number(state.selectedDevice?.is_locked) === 1;
   const packages = [...state.selectedPackages];
   const names = packages.map((pkg) => {
     const app = state.apps.find((a) => a.app_package === pkg);
@@ -575,7 +584,7 @@ async function restrictSelected() {
     ? ` ${state.allowedUrls.length} website(s) allowed.`
     : ' No website links set (browsers can open but no URL lockdown).';
   const ok = await confirmDialog(
-    'Restrict device',
+    wasLocked ? 'Update restriction' : 'Restrict device',
     `Allow only: ${label}. Home stays available; all other apps will be blocked.${urlNote}`
   );
   if (!ok) return;
@@ -584,7 +593,9 @@ async function restrictSelected() {
       allowed_urls: state.allowedUrls,
       block_web_media: state.blockWebMedia ? 1 : 0
     });
-    toast(`Restricted to ${packages.length} app(s)`);
+    toast(wasLocked
+      ? `Updated — ${packages.length} app(s) allowed`
+      : `Restricted to ${packages.length} app(s)`);
     await refresh();
     await openDevice(state.selectedId);
   } catch (error) {

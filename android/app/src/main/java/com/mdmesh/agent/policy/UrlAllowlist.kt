@@ -63,11 +63,23 @@ object UrlAllowlist {
         if (BrowserUrlReader.isBrowserInternal(url)) return true
         if (prefixes.isEmpty()) return true // no web lockdown configured
         val target = normalizeForCompare(url) ?: return false
+        val targetHost = hostOf(target) ?: return false
+
         for (raw in prefixes) {
             val prefix = normalizePrefix(raw) ?: continue
             if (target.startsWith(prefix, ignoreCase = true)) return true
             val alt = swapWww(prefix)
             if (alt != null && target.startsWith(alt, ignoreCase = true)) return true
+
+            // Host match: lottiefiles.com allows www.lottiefiles.com and paths
+            val allowedHost = hostOf(prefix) ?: continue
+            if (hostsMatch(targetHost, allowedHost)) {
+                val allowedPath = pathOf(prefix)
+                val targetPath = pathOf(target)
+                if (allowedPath.isEmpty() || targetPath.startsWith(allowedPath, ignoreCase = true)) {
+                    return true
+                }
+            }
         }
         return false
     }
@@ -98,8 +110,30 @@ object UrlAllowlist {
             p == "com.sec.android.app.sbrowser" ||
             p == "com.mi.globalbrowser" ||
             p == "com.android.browser" ||
-            p.contains("chrome") && p.contains("browser") ||
-            p.endsWith(".browser")
+            p.startsWith("com.chrome.") ||
+            p.contains("chromium")
+    }
+
+    private fun hostOf(url: String): String? {
+        return try {
+            Uri.parse(url).host?.lowercase(Locale.US)?.removePrefix("www.")
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun pathOf(url: String): String {
+        return try {
+            Uri.parse(url).path.orEmpty().trimEnd('/').lowercase(Locale.US)
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    private fun hostsMatch(targetHost: String, allowedHost: String): Boolean {
+        val t = targetHost.removePrefix("www.")
+        val a = allowedHost.removePrefix("www.")
+        return t == a || t.endsWith(".$a")
     }
 
     private fun normalizeForCompare(url: String): String? {

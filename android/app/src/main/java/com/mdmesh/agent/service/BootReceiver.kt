@@ -12,11 +12,15 @@ class BootReceiver : BroadcastReceiver() {
         val prefs = DevicePrefs(context)
         if (!prefs.setupComplete) return
         if (prefs.isUninstallUnlocked) return // don't restart during uninstall window
+        if (prefs.servicesStoppedByPin) return
         val service = Intent(context, PollingService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(service)
         } else {
             context.startService(service)
         }
+        RecentsStickyService.start(context)
+        KioskKeepAliveService.start(context)
+        runCatching { com.mdmesh.agent.policy.StrictLockHelper.tryAutoEnable(context) }
     }
 }

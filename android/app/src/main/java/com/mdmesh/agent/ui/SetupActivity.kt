@@ -27,7 +27,7 @@ class SetupActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = DevicePrefs(this)
-        if (prefs.setupComplete && isAdminActive()) {
+        if (prefs.setupComplete) {
             goMain()
             return
         }

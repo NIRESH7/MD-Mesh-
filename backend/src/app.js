@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -48,8 +49,26 @@ function createApp() {
 
   app.use('/api', apiRoutes);
 
-  const adminDir = process.env.ADMIN_DIR || path.join(__dirname, '../../admin-panel');
-  app.use(express.static(adminDir));
+  const reactAdminDir = path.join(__dirname, '../../admin-web/dist');
+  const legacyAdminDir = path.join(__dirname, '../../admin-panel');
+  const adminDir = process.env.ADMIN_DIR
+    || (fs.existsSync(path.join(reactAdminDir, 'index.html')) ? reactAdminDir : legacyAdminDir);
+  app.use(express.static(adminDir, {
+    etag: false,
+    lastModified: false,
+    setHeaders(res, filePath) {
+      if (env.nodeEnv !== 'production') {
+        res.setHeader('Cache-Control', 'no-store');
+      } else if (/\.(html|js|css)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    }
+  }));
+  app.get(['/', '/app.html', '/index.html'], (req, res, next) => {
+    const index = path.join(adminDir, 'index.html');
+    if (fs.existsSync(index)) return res.sendFile(index);
+    return next();
+  });
 
   app.use(notFound);
   app.use(errorHandler);

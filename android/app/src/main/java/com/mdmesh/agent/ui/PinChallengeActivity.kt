@@ -60,7 +60,7 @@ class PinChallengeActivity : AppCompatActivity() {
         val host = PinPad.build(
             context = this,
             title = "Enter uninstall PIN",
-            message = "Use the number pad below (no keyboard).\n\nAfter unlock:\n1) Accessibility → MD Mesh → OFF\n2) Device Admin → OFF\n3) Uninstall",
+            message = "This clears app restriction so you can uninstall.\nUse the number pad (no keyboard).\n\nAfter unlock:\n1) Accessibility → Pandiyan Agency → OFF\n2) Device Admin → OFF\n3) Uninstall",
             confirmLabel = "Unlock uninstall",
             onConfirm = { pin -> tryUnlock(pin) },
             onCancel = {

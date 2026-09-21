@@ -11,12 +11,12 @@ import com.mdmesh.agent.ui.PinChallengeActivity
 
 class MeshDeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onEnabled(context: Context, intent: Intent) {
-        Toast.makeText(context, "MD Mesh device admin enabled", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Pandiyan Agency device admin enabled", Toast.LENGTH_SHORT).show()
         UninstallGuard.applyBlockedState(context)
     }
 
     override fun onDisabled(context: Context, intent: Intent) {
-        Toast.makeText(context, "MD Mesh device admin disabled", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Pandiyan Agency device admin disabled", Toast.LENGTH_SHORT).show()
     }
 
     override fun onDisableRequested(context: Context, intent: Intent): CharSequence {
@@ -27,9 +27,9 @@ class MeshDeviceAdminReceiver : DeviceAdminReceiver() {
                     Intent(context, PinChallengeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 )
             }
-            return "Enter the admin panel PIN in MD Mesh before disabling Device Admin / uninstalling."
+            return "Enter the admin panel PIN in Pandiyan Agency before disabling Device Admin / uninstalling."
         }
-        return "Disabling admin allows uninstalling MD Mesh and removes app restrictions."
+        return "Disabling admin allows uninstalling Pandiyan Agency and removes app restrictions."
     }
 }
 
