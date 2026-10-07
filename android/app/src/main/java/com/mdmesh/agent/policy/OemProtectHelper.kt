@@ -35,6 +35,8 @@ object OemProtectHelper {
 
     fun requestIgnoreBattery(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        val pm = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+        if (pm?.isIgnoringBatteryOptimizations(context.packageName) == true) return
         val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
             .setData(Uri.parse("package:${context.packageName}"))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

@@ -1,14 +1,15 @@
 const env = require('./config/env');
 const logger = require('./utils/logger');
-const { ping, end } = require('./config/db');
+const { ping, end, ensureSchema } = require('./config/db');
 const { createApp } = require('./app');
 
 const app = createApp();
 
 async function start() {
   try {
+    await ensureSchema();
     await ping();
-    logger.info(`SQLite connected at ${env.sqlitePath}`);
+    logger.info(`MySQL connected at ${env.db.host}:${env.db.port}/${env.db.database}`);
   } catch (error) {
     logger.error(`Database connection failed: ${error.message}`);
     process.exit(1);

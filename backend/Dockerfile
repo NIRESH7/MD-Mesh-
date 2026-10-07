@@ -11,6 +11,6 @@ COPY admin-panel /workspace/admin-panel
 COPY database /workspace/database
 
 ENV NODE_ENV=production
-EXPOSE 5000
+EXPOSE 3034
 
 CMD ["sh", "-c", "node scripts/seed.js && node src/server.js"]

@@ -69,10 +69,12 @@ class RecentsStickyService : Service() {
 
         fun start(context: Context) {
             val i = Intent(context, RecentsStickyService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(i)
-            } else {
-                context.startService(i)
+            runCatching {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(i)
+                } else {
+                    context.startService(i)
+                }
             }
         }
 

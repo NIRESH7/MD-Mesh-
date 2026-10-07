@@ -1,25 +1,50 @@
-# Deployment
+# Deployment — Pandiyan Agency
 
-## Docker on Ubuntu 20.04+
+| Surface | URL |
+|---------|-----|
+| Admin panel | https://admin.pandiyanagency.com |
+| Backend API | https://api.pandiyanagency.com |
+| API process port | `3034` |
+| Android server URL | `https://api.pandiyanagency.com` |
 
-```bash
-sudo apt update && sudo apt install -y docker.io docker-compose-v2
-git clone <this-repo> md-mesh && cd md-mesh
-# edit docker-compose.yml: JWT_SECRET, ADMIN_PASSWORD, ADMIN_ORIGIN
-sudo docker compose up -d --build
+## Backend env (host panel / `.env`)
+
+Copy values from `backend/.env`. Important keys:
+
+```
+PORT=3034
+NODE_ENV=production
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=admin
+DB_PASSWORD=...
+DB_NAME=api
+ADMIN_ORIGIN=https://admin.pandiyanagency.com
+API_PUBLIC_URL=https://api.pandiyanagency.com
+JWT_SECRET=...          # or jwtadminSecret — same value, min 32 chars
+JWT_EXPIRE=24h
+passwordSecret=...      # optional (host panel); not used by this API
+jwtMemberSecret=...     # optional
+jwtSuperAdminSecret=... # optional
+jwtEmailSecret=...      # optional
 ```
 
-Put Nginx (or Caddy) in front for HTTPS. Example Nginx:
+This API only signs **admin** JWTs. Fill `JWT_SECRET` / `jwtadminSecret`. The other secrets can stay set for the host panel but are unused.
+
+## Nginx
+
+**API** — `api.pandiyanagency.com` → Node on `3034`:
 
 ```nginx
 server {
     listen 443 ssl;
-    server_name mdm.example.com;
-    ssl_certificate     /etc/letsencrypt/live/mdm.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/mdm.example.com/privkey.pem;
+    server_name api.pandiyanagency.com;
+    ssl_certificate     /etc/letsencrypt/live/api.pandiyanagency.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.pandiyanagency.com/privkey.pem;
 
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:3034;
+        proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto https;
@@ -27,42 +52,56 @@ server {
 }
 ```
 
-Set in compose:
+**Admin panel** — `admin.pandiyanagency.com` → static files from `admin-web/dist`:
 
+```nginx
+server {
+    listen 443 ssl;
+    server_name admin.pandiyanagency.com;
+    ssl_certificate     /etc/letsencrypt/live/admin.pandiyanagency.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/admin.pandiyanagency.com/privkey.pem;
+
+    root /var/www/admin-pandiyan;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
 ```
-ADMIN_ORIGIN=https://mdm.example.com
-NODE_ENV=production
-```
 
-Point the APK server URL at `https://mdm.example.com`.
-
-Let's Encrypt:
+Build admin before upload:
 
 ```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d mdm.example.com
+cd admin-web && npm ci && npm run build
+# upload dist/* to /var/www/admin-pandiyan
 ```
 
-## Logs
+Admin already calls `https://api.pandiyanagency.com` (`VITE_API_BASE`).
 
-API logs: container stdout and `logs/server.log` (5 MB rotation, 5 files).
+## Start API on server
 
 ```bash
-docker compose logs -f api
+cd backend
+npm ci --omit=dev
+npm run seed
+NODE_ENV=production node src/server.js
+# or: pm2 start src/server.js --name mdmesh-api
 ```
 
-## Backup
+Health check: `https://api.pandiyanagency.com/api/health`
 
-Dump MySQL daily (see DATABASE.md). Keep the volume snapshot if you use a VPS backup product.
+Default admin after seed: `admin` / `password123` (change immediately).
 
-## Graceful restart
+## Android
+
+Default server URL is `https://api.pandiyanagency.com`. Rebuild the APK after config changes.
+
+## Logs / restart
 
 ```bash
-docker compose restart api
+pm2 logs mdmesh-api
+pm2 restart mdmesh-api
 ```
 
-The process handles SIGTERM and closes the MySQL pool.
-
-## Horizontal scale
-
-The API is stateless (JWT). Run several API containers behind Nginx. MySQL remains the single source of lock state. Sticky sessions are not required.
+API also writes `logs/server.log`.

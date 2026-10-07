@@ -67,59 +67,41 @@ function Login({ onLogin }) {
 
   return (
     <div className="auth">
-      <svg className="auth-wave" viewBox="0 0 1440 320" preserveAspectRatio="none" aria-hidden="true">
-        <path
-          fill="rgba(0,174,239,0.12)"
-          d="M0,224L48,208C96,192,192,160,288,154.7C384,149,480,171,576,186.7C672,203,768,213,864,197.3C960,181,1056,139,1152,133.3C1248,128,1344,160,1392,176L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
-        />
-        <path
-          fill="rgba(0,174,239,0.18)"
-          d="M0,256L60,240C120,224,240,192,360,186.7C480,181,600,203,720,208C840,213,960,203,1080,181.3C1200,160,1320,128,1380,112L1440,96L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"
-        />
-      </svg>
+      <form className="auth-card" onSubmit={submit}>
+        <img src="/logo-pandiyan.png?v=2" alt="Pandiyan Agency" className="auth-logo" />
 
-      <div className="auth-card">
-        <img src="/mark.svg" alt="" className="auth-mark" />
-        <h1 className="auth-title">Pandiyan Agency</h1>
-        <p className="auth-tag">நீரோடும் பாதையின் சீர்மிகு அடையாளம்</p>
+        <label className="auth-field">
+          <span>Username</span>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+            required
+          />
+        </label>
+        <label className="auth-field">
+          <span>Password</span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
+        </label>
 
-        <form className="auth-form" onSubmit={submit}>
-          <label>
-            <span>Username</span>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              required
-            />
-          </label>
-          <label>
-            <span>Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </label>
+        <label className="check">
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          Remember me
+        </label>
 
-          <div className="auth-row">
-            <label className="check">
-              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-              Remember me
-            </label>
-          </div>
+        {error ? <p className="form-error">{error}</p> : null}
 
-          {error ? <p className="form-error">{error}</p> : null}
-
-          <button className="auth-btn" type="submit" disabled={busy}>
-            {busy ? 'Please wait…' : 'Sign in'}
-          </button>
-        </form>
-
-        <p className="auth-foot">Since 1991 · ISO 9001:2015</p>
-      </div>
+        <button className="auth-btn" type="submit" disabled={busy}>
+          {busy ? 'Please wait…' : 'Sign in'}
+        </button>
+      </form>
     </div>
   );
 }
@@ -397,7 +379,6 @@ function Console({ onLogout }) {
   const [toast, setToast] = useState(null);
   const [pinInfo, setPinInfo] = useState({ is_set: false, masked: null, pin: null });
   const [pinInput, setPinInput] = useState('');
-  const [pw, setPw] = useState({ current: '', next: '' });
 
   const showToast = useCallback((message, type = 'ok') => {
     setToast({ message, type, id: Date.now() });
@@ -523,7 +504,7 @@ function Console({ onLogout }) {
     <div className="shell">
       <header className="topbar">
         <div className="brand">
-          <img src="/mark.svg" alt="" />
+          <img src="/logo-pandiyan.png" alt="Pandiyan Agency" />
           <strong>Pandiyan Agency</strong>
         </div>
         <nav className="topnav">
@@ -653,99 +634,94 @@ function Console({ onLogout }) {
 
         {view === 'settings' ? (
           <section className="view settings">
-            <div className="settings-card">
-              <h2>Uninstall / Strict Lock PIN</h2>
-              <p className="hint">
-                Devices use this PIN to unlock uninstall, turn off Strict Lock, or stop agent services.
-                Status: {pinInfo.is_set ? `Set (${pinInfo.masked || '****'})` : 'Not set'}
-              </p>
-              <div className="row">
-                <input
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                  placeholder="4–8 digit PIN"
-                />
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={async () => {
-                    try {
-                      await api.setUninstallPin(pinInput);
-                      setPinInput('');
-                      showToast('PIN saved — devices pick it up on next sync');
-                      loadPin();
-                    } catch (err) {
-                      showToast(err.message, 'error');
-                    }
-                  }}
-                >
-                  Save PIN
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={async () => {
-                    try {
-                      const res = await api.getUninstallPin(true);
-                      setPinInfo(res);
-                      if (res.pin) showToast(`PIN: ${res.pin}`);
-                    } catch (err) {
-                      showToast(err.message, 'error');
-                    }
-                  }}
-                >
-                  Reveal
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={async () => {
-                    if (!window.confirm('Clear PIN on all devices?')) return;
-                    try {
-                      await api.clearUninstallPin();
-                      showToast('PIN cleared');
-                      loadPin();
-                    } catch (err) {
-                      showToast(err.message, 'error');
-                    }
-                  }}
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-            <div className="settings-card">
-              <h2>Admin password</h2>
-              <div className="row stack">
-                <input
-                  type="password"
-                  placeholder="Current password"
-                  value={pw.current}
-                  onChange={(e) => setPw({ ...pw, current: e.target.value })}
-                />
-                <input
-                  type="password"
-                  placeholder="New password"
-                  value={pw.next}
-                  onChange={(e) => setPw({ ...pw, next: e.target.value })}
-                />
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={async () => {
-                    try {
-                      await api.changePassword(pw.current, pw.next);
-                      setPw({ current: '', next: '' });
-                      showToast('Admin password updated');
-                    } catch (err) {
-                      showToast(err.message, 'error');
-                    }
-                  }}
-                >
-                  Update password
-                </button>
-              </div>
-            </div>
+            <header className="settings-hero">
+              <h1>Settings</h1>
+              <p className="settings-lead">Device unlock PIN for phones and tablets</p>
+            </header>
+
+            <article className="settings-card">
+              <table className="settings-table">
+                <tbody>
+                  <tr>
+                    <th scope="row">Status</th>
+                    <td>
+                      <span className={`settings-status ${pinInfo.is_set ? 'is-on' : 'is-off'}`}>
+                        {pinInfo.is_set ? 'Set' : 'Not set'}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">New PIN</th>
+                    <td>
+                      <input
+                        value={pinInput}
+                        onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder="4–8 digits"
+                        maxLength={8}
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Actions</th>
+                    <td className="settings-table-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={pinInput.length < 4}
+                        onClick={async () => {
+                          try {
+                            await api.setUninstallPin(pinInput);
+                            setPinInput('');
+                            showToast('PIN saved — devices sync next poll');
+                            loadPin();
+                          } catch (err) {
+                            showToast(err.message, 'error');
+                          }
+                        }}
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        disabled={!pinInfo.is_set}
+                        onClick={async () => {
+                          try {
+                            const res = await api.getUninstallPin(true);
+                            setPinInfo(res);
+                            if (res.pin) showToast(`PIN: ${res.pin}`);
+                          } catch (err) {
+                            showToast(err.message, 'error');
+                          }
+                        }}
+                      >
+                        Reveal
+                      </button>
+                      {pinInfo.is_set ? (
+                        <button
+                          type="button"
+                          className="btn btn-ghost settings-clear"
+                          onClick={async () => {
+                            if (!window.confirm('Clear PIN on all devices?')) return;
+                            try {
+                              await api.clearUninstallPin();
+                              showToast('PIN cleared');
+                              loadPin();
+                            } catch (err) {
+                              showToast(err.message, 'error');
+                            }
+                          }}
+                        >
+                          Clear
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </article>
           </section>
         ) : null}
       </main>

@@ -22,12 +22,7 @@ function createApp() {
 
   const allowed = env.adminOrigin.split(',').map((s) => s.trim()).filter(Boolean);
   app.use(cors({
-    origin(origin, callback) {
-      if (!origin || allowed.includes(origin) || env.nodeEnv !== 'production') {
-        return callback(null, true);
-      }
-      return callback(null, false);
-    },
+    origin: true,
     credentials: true
   }));
 

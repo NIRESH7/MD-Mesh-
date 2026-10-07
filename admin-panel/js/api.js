@@ -1,6 +1,6 @@
 const Api = (() => {
   const stored = localStorage.getItem('mdmesh.apiBase');
-  const base = stored || '';
+  const base = stored || 'https://api.pandiyanagency.com';
 
   function token() {
     return sessionStorage.getItem('mdmesh.token') || localStorage.getItem('mdmesh.token');

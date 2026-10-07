@@ -1,4 +1,7 @@
 const TOKEN_KEY = 'pandiyan.token';
+const API_BASE = String(
+  import.meta.env.VITE_API_BASE || 'https://api.pandiyanagency.com'
+).replace(/\/$/, '');
 
 export function getToken() {
   return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
@@ -20,7 +23,7 @@ async function request(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   const auth = getToken();
   if (auth) headers.Authorization = `Bearer ${auth}`;
-  const res = await fetch(path, { ...options, headers });
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const data = await res.json().catch(() => ({ success: false, error: 'Invalid server response' }));
   if (!res.ok) {
     const err = new Error(data.error || `Request failed (${res.status})`);

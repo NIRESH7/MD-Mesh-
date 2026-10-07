@@ -20,8 +20,8 @@ function statusCaseSql() {
   const timeout = Number(env.syncTimeoutSeconds);
   return `
     CASE
-      WHEN d.last_sync IS NULL OR d.last_sync < datetime('now', '-${inactive} seconds') THEN 'inactive'
-      WHEN d.last_sync < datetime('now', '-${timeout} seconds') THEN 'sync_timeout'
+      WHEN d.last_sync IS NULL OR d.last_sync < DATE_SUB(NOW(), INTERVAL ${inactive} SECOND) THEN 'inactive'
+      WHEN d.last_sync < DATE_SUB(NOW(), INTERVAL ${timeout} SECOND) THEN 'sync_timeout'
       WHEN d.is_locked = 1 THEN 'locked'
       ELSE 'active'
     END
@@ -117,7 +117,7 @@ async function attachAllowlist(device) {
       [device.device_id]
     );
     await query(
-      `UPDATE restrictions SET restriction_enabled = 0, locked_app = NULL, unlocked_at = datetime('now')
+      `UPDATE restrictions SET restriction_enabled = 0, locked_app = NULL, unlocked_at = NOW()
        WHERE device_id = ?`,
       [device.device_id]
     );
@@ -253,11 +253,11 @@ async function lockDevice({ deviceId, appPackages, allowedUrls, blockWebMedia, a
 
     await conn.execute(
       `INSERT INTO restrictions (device_id, locked_app, restriction_enabled, locked_at, unlocked_at)
-       VALUES (?, ?, 1, datetime('now'), NULL)
-       ON CONFLICT(device_id) DO UPDATE SET
-         locked_app = excluded.locked_app,
+       VALUES (?, ?, 1, NOW(), NULL)
+       ON DUPLICATE KEY UPDATE
+         locked_app = VALUES(locked_app),
          restriction_enabled = 1,
-         locked_at = datetime('now'),
+         locked_at = NOW(),
          unlocked_at = NULL`,
       [deviceId, display]
     );
@@ -341,11 +341,11 @@ async function unlockDevice({ deviceId, admin }) {
 
     await conn.execute(
       `INSERT INTO restrictions (device_id, locked_app, restriction_enabled, locked_at, unlocked_at)
-       VALUES (?, NULL, 0, NULL, datetime('now'))
-       ON CONFLICT(device_id) DO UPDATE SET
+       VALUES (?, NULL, 0, NULL, NOW())
+       ON DUPLICATE KEY UPDATE
          locked_app = NULL,
          restriction_enabled = 0,
-         unlocked_at = datetime('now')`,
+         unlocked_at = NOW()`,
       [deviceId]
     );
 
@@ -390,11 +390,11 @@ async function releaseByPin({ uniqueId, pin }) {
     );
     await conn.execute(
       `INSERT INTO restrictions (device_id, locked_app, restriction_enabled, locked_at, unlocked_at)
-       VALUES (?, NULL, 0, NULL, datetime('now'))
-       ON CONFLICT(device_id) DO UPDATE SET
+       VALUES (?, NULL, 0, NULL, NOW())
+       ON DUPLICATE KEY UPDATE
          locked_app = NULL,
          restriction_enabled = 0,
-         unlocked_at = datetime('now')`,
+         unlocked_at = NOW()`,
       [device.device_id]
     );
     await conn.execute('DELETE FROM device_allowlist WHERE device_id = ?', [device.device_id]);
@@ -437,9 +437,9 @@ async function replaceApps(connection, deviceId, installedApps) {
     await connection.execute(
       `INSERT INTO device_apps (device_id, app_name, app_package, is_system_app)
        VALUES (?, ?, ?, ?)
-       ON CONFLICT(device_id, app_package) DO UPDATE SET
-         app_name = excluded.app_name,
-         is_system_app = excluded.is_system_app`,
+       ON DUPLICATE KEY UPDATE
+         app_name = VALUES(app_name),
+         is_system_app = VALUES(is_system_app)`,
       [deviceId, name, pkg.slice(0, 150), isSystem]
     );
   }
@@ -471,7 +471,7 @@ async function syncDevice(payload) {
       const [insert] = await conn.execute(
         `INSERT INTO devices
           (unique_id, device_name, device_model, ip_address, current_status, is_locked, locked_to_app, last_sync)
-         VALUES (?, ?, ?, ?, 'active', 0, NULL, datetime('now'))`,
+         VALUES (?, ?, ?, ?, 'active', 0, NULL, NOW())`,
         [uniqueId, deviceName, deviceModel, ipAddress]
       );
       const [created] = await conn.execute('SELECT * FROM devices WHERE device_id = ?', [insert.insertId]);
@@ -488,7 +488,7 @@ async function syncDevice(payload) {
       // Refresh device row after possible heal below; provisional status
       await conn.execute(
         `UPDATE devices
-         SET device_name = ?, device_model = ?, ip_address = ?, last_sync = datetime('now')
+         SET device_name = ?, device_model = ?, ip_address = ?, last_sync = NOW()
          WHERE device_id = ?`,
         [deviceName, deviceModel, ipAddress, device.device_id]
       );
@@ -606,10 +606,10 @@ async function getScreenTime(deviceId, range = 'today') {
             SUM(duration_sec) AS duration_sec
      FROM app_usage_sessions
      WHERE device_id = ?
-       AND started_at >= datetime('now', ?)
+       AND started_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
      GROUP BY app_package
      ORDER BY duration_sec DESC`,
-    [deviceId, `-${days} days`]
+    [deviceId, days]
   );
 
   return {

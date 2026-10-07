@@ -43,24 +43,17 @@ class MainActivity : AppCompatActivity() {
         }
         // Pandiyan Home launcher while Restricted; Strict Lock blocks other apps.
         if (!prefs.servicesStoppedByPin) {
-            startPolling()
-            RecentsStickyService.start(this)
-            com.mdmesh.agent.service.KioskKeepAliveService.start(this)
-            com.mdmesh.agent.service.LockWatchdog.schedule(this)
+            runCatching { startPolling() }
+            runCatching { RecentsStickyService.start(this) }
+            runCatching { com.mdmesh.agent.service.KioskKeepAliveService.start(this) }
+            runCatching { com.mdmesh.agent.service.LockWatchdog.schedule(this) }
         }
         prefs.publishCrossProcess()
         HomeEnforcer.applyForLockState(this, prefs.isLocked)
         OemProtectHelper.requestIgnoreBattery(this)
-        if (prefs.isLocked && !HomeEnforcer.isOurLauncherDefault(this) && !prefs.isServiceControlUnlocked) {
-            // Only prompt Home chooser when Device Owner is NOT forcing preferred Home
-            if (!DeviceOwnerHelper.isDeviceOwner(this)) {
-                startActivity(Intent(this, RequireHomeActivity::class.java))
-            } else {
-                HomeEnforcer.setPreferredHome(this)
-                HomeEnforcer.goHome(this)
-            }
+        if (prefs.isLocked && DeviceOwnerHelper.isDeviceOwner(this)) {
+            HomeEnforcer.setPreferredHome(this)
         } else if (prefs.isLocked && !prefs.servicesStoppedByPin) {
-            // Silent backup only — never force Strict Lock full screen
             StrictLockHelper.tryAutoEnable(this)
         }
         showMainUi()
@@ -97,8 +90,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
         if (!prefs.servicesStoppedByPin) {
-            startPolling()
-            RecentsStickyService.start(this)
+            runCatching { startPolling() }
+            runCatching { RecentsStickyService.start(this) }
+            runCatching { com.mdmesh.agent.service.KioskKeepAliveService.start(this) }
+            runCatching { com.mdmesh.agent.service.LockWatchdog.schedule(this) }
         }
         render()
         handler.post(refresher)
@@ -327,12 +322,8 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (binding != null) render()
         HomeEnforcer.applyForLockState(this, prefs.isLocked)
-        if (prefs.isLocked && !prefs.isServiceControlUnlocked) {
-            if (DeviceOwnerHelper.isDeviceOwner(this)) {
-                HomeEnforcer.setPreferredHome(this)
-            } else if (!HomeEnforcer.isOurLauncherDefault(this)) {
-                startActivity(Intent(this, RequireHomeActivity::class.java))
-            }
+        if (prefs.isLocked && DeviceOwnerHelper.isDeviceOwner(this)) {
+            HomeEnforcer.setPreferredHome(this)
         }
     }
 
@@ -343,7 +334,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun startPolling() {
         val service = Intent(this, PollingService::class.java).setAction(PollingService.ACTION_SYNC_NOW)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(service) else startService(service)
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(service) else startService(service)
+        }
     }
 
     private fun stopPolling() {

@@ -75,7 +75,7 @@ const changePassword = [
     }
     const hash = await bcrypt.hash(next, 10);
     await query(
-      `UPDATE admins SET password_hash = ?, updated_at = datetime('now') WHERE admin_id = ?`,
+      `UPDATE admins SET password_hash = ?, updated_at = NOW() WHERE admin_id = ?`,
       [hash, req.admin.adminId]
     );
     await writeAudit({

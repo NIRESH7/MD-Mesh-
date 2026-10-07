@@ -150,8 +150,10 @@ class KioskAccessibilityService : AccessibilityService() {
         }
 
         if (snap.locked && isAccessibilitySettings(pkg, className) && !serviceUnlocked(snap)) {
-            kickAway("Strict Lock is on — open Pandiyan Agency + PIN to change it")
-            return
+            if (DevicePrefs(this).hasProtectionPin && !isPandiyanOrSettingsWindow(pkg)) {
+                kickAway("Strict Lock is on — open Pandiyan Agency + PIN to change it")
+                return
+            }
         }
 
         if (!snap.locked) return
@@ -277,6 +279,13 @@ class KioskAccessibilityService : AccessibilityService() {
      */
     private fun returnToPandiyanHome() {
         if (isOurUiOnTop()) return
+        val prefs = DevicePrefs(this)
+        if (!prefs.setupComplete) {
+            val intent = Intent(this, com.mdmesh.agent.ui.SetupActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            runCatching { startActivity(intent) }
+            return
+        }
         HomeEnforcer.enableHomeComponent(this)
         if (DeviceOwnerHelper.isDeviceOwner(this)) {
             HomeEnforcer.setPreferredHome(this)
@@ -317,7 +326,12 @@ class KioskAccessibilityService : AccessibilityService() {
         if (pkg == packageName) return true
         if (!snap.locked) return true
         if (pkg in snap.allowed) return true
-        if (PolicyPackages.isSettingsPackage(pkg)) return false
+        if (PolicyPackages.isSettingsPackage(pkg)) {
+            if (serviceUnlocked(snap) || !DevicePrefs(this).hasProtectionPin || isPandiyanOrSettingsWindow(pkg)) {
+                return true
+            }
+            return false
+        }
         return PolicyPackages.isHomeOrSystem(this, pkg)
     }
 
@@ -359,6 +373,36 @@ class KioskAccessibilityService : AccessibilityService() {
         }
         return cls.contains("Accessibility", ignoreCase = true) ||
             cls.contains("accessibility", ignoreCase = true)
+    }
+
+    private fun isPandiyanOrSettingsWindow(pkg: String): Boolean {
+        if (pkg == packageName) return true
+        if (!PolicyPackages.isSettingsPackage(pkg) && !pkg.contains("settings", ignoreCase = true)) {
+            return false
+        }
+        val root = runCatching { rootInActiveWindow }.getOrNull() ?: return false
+        return try {
+            fun checkNode(node: android.view.accessibility.AccessibilityNodeInfo?): Boolean {
+                if (node == null) return false
+                val text = node.text?.toString().orEmpty()
+                val desc = node.contentDescription?.toString().orEmpty()
+                if (text.contains("Pandiyan", ignoreCase = true) || desc.contains("Pandiyan", ignoreCase = true) ||
+                    text.contains("mdmesh", ignoreCase = true) || desc.contains("mdmesh", ignoreCase = true) ||
+                    text.contains("Restricted", ignoreCase = true) || desc.contains("Restricted", ignoreCase = true) ||
+                    text.contains("Accessibility", ignoreCase = true) || desc.contains("Accessibility", ignoreCase = true) ||
+                    text.contains("Device admin", ignoreCase = true) || desc.contains("Device admin", ignoreCase = true)
+                ) {
+                    return true
+                }
+                for (i in 0 until node.childCount) {
+                    if (checkNode(node.getChild(i))) return true
+                }
+                return false
+            }
+            checkNode(root)
+        } catch (e: Exception) {
+            false
+        }
     }
 
     private fun enforceBrowserUrl(snap: CrossProcessLock.Snapshot, pkg: String) {

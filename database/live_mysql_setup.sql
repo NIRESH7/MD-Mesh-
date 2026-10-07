@@ -1,8 +1,34 @@
-CREATE DATABASE IF NOT EXISTS api
+-- ============================================================
+-- Pandiyan Agency — LIVE MySQL setup
+-- API:  https://api.pandiyanagency.com  (port 3034)
+-- Admin panel: https://admin.pandiyanagency.com
+--
+-- DB credentials (from host):
+--   Database : api
+--   Username : admin
+--   Password : Ct8evxW90npjUENjvsaQfePmR
+--   Host     : 127.0.0.1 (same server as Node API)
+--
+-- How to run (as MySQL root / panel phpMyAdmin import):
+--   mysql -u root -p < live_mysql_setup.sql
+-- ============================================================
+
+CREATE DATABASE IF NOT EXISTS `api`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE api;
+-- Create app user (skip if host already created "admin")
+CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'Ct8evxW90npjUENjvsaQfePmR';
+CREATE USER IF NOT EXISTS 'admin'@'127.0.0.1' IDENTIFIED BY 'Ct8evxW90npjUENjvsaQfePmR';
+GRANT ALL PRIVILEGES ON `api`.* TO 'admin'@'localhost';
+GRANT ALL PRIVILEGES ON `api`.* TO 'admin'@'127.0.0.1';
+FLUSH PRIVILEGES;
+
+USE `api`;
+
+-- ------------------------------------------------------------
+-- Tables
+-- ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS admins (
   admin_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -11,7 +37,7 @@ CREATE TABLE IF NOT EXISTS admins (
   email VARCHAR(100),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS devices (
   device_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -28,7 +54,7 @@ CREATE TABLE IF NOT EXISTS devices (
   INDEX idx_unique_id (unique_id),
   INDEX idx_status (current_status),
   INDEX idx_last_sync (last_sync)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS device_apps (
   app_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -41,7 +67,7 @@ CREATE TABLE IF NOT EXISTS device_apps (
   UNIQUE KEY unique_app (device_id, app_package),
   INDEX idx_device_id (device_id),
   INDEX idx_package (app_package)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS restrictions (
   restriction_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -53,7 +79,7 @@ CREATE TABLE IF NOT EXISTS restrictions (
   FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE,
   INDEX idx_device_id (device_id),
   INDEX idx_enabled (restriction_enabled)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   log_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -67,7 +93,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   INDEX idx_device_id (device_id),
   INDEX idx_action (action),
   INDEX idx_timestamp (timestamp)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS device_allowlist (
   device_id INT NOT NULL,
@@ -76,7 +102,7 @@ CREATE TABLE IF NOT EXISTS device_allowlist (
   PRIMARY KEY (device_id, app_package),
   FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE,
   INDEX idx_allowlist_device (device_id)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS device_web_allowlist (
   device_id INT NOT NULL,
@@ -85,7 +111,7 @@ CREATE TABLE IF NOT EXISTS device_web_allowlist (
   PRIMARY KEY (device_id, url_prefix),
   FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE,
   INDEX idx_web_allowlist_device (device_id)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS app_usage_sessions (
   session_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -98,10 +124,17 @@ CREATE TABLE IF NOT EXISTS app_usage_sessions (
   client_key VARCHAR(200) UNIQUE,
   FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE,
   INDEX idx_usage_device_time (device_id, started_at)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS settings (
   `key` VARCHAR(100) PRIMARY KEY,
   value TEXT,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- Admin login user is created by backend seed (bcrypt hash):
+--   cd backend && npm run seed
+-- Default: username admin / password password123
+-- (Do NOT insert plaintext passwords into this SQL file.)
+-- ------------------------------------------------------------

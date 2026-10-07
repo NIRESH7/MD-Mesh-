@@ -47,8 +47,8 @@ class KioskHomeActivity : AppCompatActivity() {
         }
         HomeEnforcer.enableHomeComponent(this)
         if (!prefs.servicesStoppedByPin) {
-            requestSyncFromAdmin()
-            RecentsStickyService.start(this)
+            runCatching { requestSyncFromAdmin() }
+            runCatching { RecentsStickyService.start(this) }
         }
         prefs.publishCrossProcess()
         render()
@@ -57,6 +57,10 @@ class KioskHomeActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         prefs.publishCrossProcess()
+        // Admin unlocked → restore normal behavior without closing app if user is in settings/setup
+        if (!prefs.isLocked && !CrossProcessLock.read(this).locked) {
+            HomeEnforcer.disableHomeComponent(this)
+        }
         // Device Owner preferred Home — never bounce into RequireHome (that caused open/close loop)
         if (prefs.isLocked &&
             !HomeEnforcer.isOurLauncherDefault(this) &&
@@ -69,6 +73,15 @@ class KioskHomeActivity : AppCompatActivity() {
             // Do not sync+full re-render every resume — that flickered the launcher
             render()
         }
+    }
+
+    /** Exit kiosk UI and bring back Realme / stock Home after unrestricted. */
+    private fun leaveToStockHome(showToast: Boolean) {
+        if (showToast) {
+            Toast.makeText(this, "Unlocked — restoring phone Home…", Toast.LENGTH_SHORT).show()
+        }
+        HomeEnforcer.restoreStockHomeAndGo(this)
+        finish()
     }
 
     override fun onDestroy() {
@@ -85,7 +98,9 @@ class KioskHomeActivity : AppCompatActivity() {
     private fun requestSyncFromAdmin() {
         if (prefs.servicesStoppedByPin) return
         val sync = Intent(this, PollingService::class.java).setAction(PollingService.ACTION_SYNC_NOW)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(sync) else startService(sync)
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(sync) else startService(sync)
+        }
     }
 
     private fun refreshFromAdmin() {
@@ -103,16 +118,16 @@ class KioskHomeActivity : AppCompatActivity() {
                 if (updated) {
                     refreshing = false
                     prefs.publishCrossProcess()
+                    if (!prefs.isLocked) {
+                        leaveToStockHome(showToast = true)
+                        return
+                    }
                     render()
                     val count = prefs.allowedPackages.size
                     val sites = prefs.allowedUrls.size
                     Toast.makeText(
                         this@KioskHomeActivity,
-                        if (prefs.isLocked) {
-                            "Updated — $count app(s), $sites site(s)"
-                        } else {
-                            "Updated — device unlocked from admin"
-                        },
+                        "Updated — $count app(s), $sites site(s)",
                         Toast.LENGTH_LONG
                     ).show()
                 } else {
@@ -173,24 +188,8 @@ class KioskHomeActivity : AppCompatActivity() {
         })
 
         if (!snap.locked) {
-            root.addView(TextView(this).apply {
-                text = "Device is unlocked from admin. Use PIN to restore stock phone/tablet Home."
-                textSize = 15f
-                setPadding(0, 16, 0, 16)
-            })
-            root.addView(Button(this).apply {
-                text = "Open agent settings"
-                setOnClickListener {
-                    startActivity(Intent(this@KioskHomeActivity, MainActivity::class.java))
-                }
-            })
-            root.addView(Button(this).apply {
-                text = "Restore phone Home (PIN)"
-                setOnClickListener { askExitLauncherPin() }
-            })
-            val scroll = ScrollView(this).apply { addView(root) }
-            bindingRoot = scroll
-            setContentView(scroll)
+            // Unlocked from admin — leave immediately (simple UX, no PIN)
+            leaveToStockHome(showToast = false)
             return
         }
 
@@ -298,6 +297,10 @@ class KioskHomeActivity : AppCompatActivity() {
         }
 
         root.addView(Button(this).apply {
+            text = "Exit launcher (PIN)"
+            setOnClickListener { askExitLauncherPin() }
+        })
+        root.addView(Button(this).apply {
             text = "Agent settings (PIN)"
             setOnClickListener { askOpenSettingsPin() }
         })
@@ -372,15 +375,12 @@ class KioskHomeActivity : AppCompatActivity() {
                 PinSession.active = false
                 prefs.pinEntryActive = false
                 prefs.unlockServiceControlFor(10 * 60 * 1000L)
-                HomeEnforcer.clearPreferredHome(this)
-                HomeEnforcer.disableHomeComponent(this)
                 Toast.makeText(
                     this,
-                    "PIN OK — choose your phone Home app (Always)",
+                    "PIN OK — restoring phone Home",
                     Toast.LENGTH_LONG
                 ).show()
-                HomeEnforcer.openHomeChooser(this)
-                render()
+                leaveToStockHome(showToast = false)
             },
             onCancel = {
                 PinSession.active = false

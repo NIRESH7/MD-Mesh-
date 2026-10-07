@@ -37,7 +37,7 @@ object HomeEnforcer {
         )
     }
 
-    /** Restricted → Pandiyan Home ON (+ DO preferred). Unlocked → clear preferred + disable. */
+    /** Restricted → Pandiyan Home ON (+ DO preferred). Unlocked → clear preferred + disable + go stock Home. */
     fun applyForLockState(context: Context, locked: Boolean) {
         if (locked) {
             val prefs = DevicePrefs(context)
@@ -46,17 +46,42 @@ object HomeEnforcer {
             enableHomeComponent(context)
             setPreferredHome(context)
         } else {
-            clearPreferredHome(context)
-            disableHomeComponent(context)
+            restoreStockHomeAndGo(context)
         }
     }
 
     fun needsPandiyanHome(@Suppress("UNUSED_PARAMETER") context: Context): Boolean = true
 
     fun restoreStockHomeChooser(context: Context) {
+        restoreStockHomeAndGo(context, openChooserIfNeeded = true)
+    }
+
+    /**
+     * Leave Pandiyan Home after admin unlock (or PIN exit).
+     * Disables our HOME activity and launches the phone's normal launcher.
+     */
+    fun restoreStockHomeAndGo(context: Context, openChooserIfNeeded: Boolean = true) {
         clearPreferredHome(context)
         disableHomeComponent(context)
-        openHomeSettings(context)
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            .addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+            )
+        val resolve = runCatching {
+            context.packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)
+        }.getOrNull()
+        val stillUs = resolve?.activityInfo?.packageName == context.packageName
+        if (stillUs && openChooserIfNeeded) {
+            openHomeChooser(context)
+        } else {
+            runCatching { context.startActivity(home) }
+            // If Realme kept no default after we disabled ourselves, open Home settings once
+            if (openChooserIfNeeded && resolve == null) {
+                openHomeSettings(context)
+            }
+        }
     }
 
     /** Device Owner: force Pandiyan as the only HOME handler. */

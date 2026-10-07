@@ -1,21 +1,24 @@
 {
-  "name": "md-mesh-backend",
+  "name": "pandiyanagency",
   "version": "1.0.0",
-  "description": "MD Mesh Mobile Device Management API",
+  "description": "Pandiyan Agency device management API",
   "main": "src/server.js",
-  "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "seed": "node scripts/seed.js",
-    "test": "jest --runInBand --forceExit",
-    "test:coverage": "jest --runInBand --forceExit --coverage"
-  },
+  "author": "nutz",
+  "license": "MIT",
   "engines": {
     "node": ">=14"
   },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "start:prod": "node src/server.js",
+    "seed": "node scripts/seed.js",
+    "test": "jest --runInBand --forceExit",
+    "test:coverage": "jest --runInBand --forceExit --coverage",
+    "deploy": "NODE_ENV=production pm2 start src/server.js --name \"Pandiyan Agency (3034)\" --max-memory-restart 2500M"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
@@ -37,5 +40,13 @@
     "testMatch": [
       "**/tests/**/*.test.js"
     ]
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nutzdev/pandiyan_agency_flutter_backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nutzdev/pandiyan_agency_flutter_backend/issues"
+  },
+  "homepage": "https://api.pandiyanagency.com"
 }

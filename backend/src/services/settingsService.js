@@ -2,15 +2,15 @@ const { query } = require('../config/db');
 const { writeAudit } = require('./auditService');
 
 async function getSetting(key) {
-  const rows = await query('SELECT value FROM settings WHERE key = ?', [key]);
+  const rows = await query('SELECT value FROM settings WHERE `key` = ?', [key]);
   return rows.length ? rows[0].value : null;
 }
 
 async function setSetting(key, value) {
   await query(
-    `INSERT INTO settings (key, value, updated_at)
-     VALUES (?, ?, datetime('now'))
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`,
+    `INSERT INTO settings (\`key\`, value, updated_at)
+     VALUES (?, ?, NOW())
+     ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW()`,
     [key, value]
   );
 }
@@ -36,7 +36,7 @@ async function setUninstallPin({ pin, admin }) {
 }
 
 async function clearUninstallPin({ admin }) {
-  await query('DELETE FROM settings WHERE key = ?', ['uninstall_pin']);
+  await query('DELETE FROM settings WHERE `key` = ?', ['uninstall_pin']);
   await writeAudit({
     action: 'CLEAR_UNINSTALL_PIN',
     details: 'Uninstall protection PIN cleared',

@@ -3,14 +3,17 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: mdmesh_root_pass
-      MYSQL_DATABASE: device_manager
+      MYSQL_ROOT_PASSWORD: Ct8evxW90npjUENjvsaQfePmR
+      MYSQL_DATABASE: api
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: Ct8evxW90npjUENjvsaQfePmR
     ports:
       - "3306:3306"
     volumes:
       - mdmesh_mysql:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pmdmesh_root_pass"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pCt8evxW90npjUENjvsaQfePmR"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -24,21 +27,27 @@ services:
       mysql:
         condition: service_healthy
     ports:
-      - "5000:5000"
+      - "3034:3034"
     environment:
       NODE_ENV: production
-      PORT: 5000
+      PORT: 3034
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: mdmesh_root_pass
-      DB_NAME: device_manager
-      JWT_SECRET: replace_this_in_production_with_64_random_chars_min
+      DB_USER: admin
+      DB_PASSWORD: Ct8evxW90npjUENjvsaQfePmR
+      DB_NAME: api
+      JWT_SECRET: UnKE_bGpksJyxS41ikFtSVRkC2d_TF_dM8940V7Su49G_9jVe-650G-skuk7EFiy
       JWT_EXPIRE: 24h
-      ADMIN_ORIGIN: http://localhost:5000
+      ADMIN_ORIGIN: https://admin.pandiyanagency.com
+      API_PUBLIC_URL: https://api.pandiyanagency.com
       LOG_FILE: logs/server.log
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: password123
+      jwtadminSecret: UnKE_bGpksJyxS41ikFtSVRkC2d_TF_dM8940V7Su49G_9jVe-650G-skuk7EFiy
+      passwordSecret: Ik6bmD-2N2hJRpJsNJFS1x1FIFshBMW3wRmaPkAKVtdzH81ekJWiX7K3gSntaZL3
+      jwtMemberSecret: H-W18zCMJvSCBOU0MFLkc2LGSrszMAs36PdBCAPyqZyok76xICBIIa1DKNIMckvz
+      jwtSuperAdminSecret: qAtXkVhqAy-nlwUzJiXDB3jQK7wCKMMRIcQSsdp3rQDsayz6cuv4XVXba44NCeN3
+      jwtEmailSecret: q0BiEslLZ6cz8nhIey1ja80eFt6b_f00n9HqY7AE_7ZyUHEZ7zc1TNb5ZdboAdQ6
 
 volumes:
   mdmesh_mysql:

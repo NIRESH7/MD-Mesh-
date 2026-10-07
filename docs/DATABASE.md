@@ -1,18 +1,27 @@
 # Database
 
 MySQL 5.7+ / 8. Schema: `database/schema.sql`. Seed: `backend/scripts/seed.js`.
+Tables are also created automatically on API / seed startup via `ensureSchema()`.
 
 ## Tables
 
 **admins** — console users. `password_hash` is bcrypt.
 
-**devices** — one row per physical device. `unique_id` is the APK UUID. `is_locked` / `locked_to_app` are the live command the agent reads. `current_status` is updated on sync; the API also recomputes status from `last_sync` so a crashed agent shows inactive.
+**devices** — one row per physical device. `unique_id` is the APK UUID. `is_locked` / `locked_to_app` are the live command the agent reads. `block_web_media` controls website media blocking when locked. `current_status` is updated on sync; the API also recomputes status from `last_sync` so a crashed agent shows inactive.
 
-**device_apps** — installed packages per device. Replaced on each sync (new packages inserted, missing packages deleted).
+**device_apps** — installed packages per device. Upserted on each sync (new packages inserted, missing packages deleted).
 
 **restrictions** — 1:1 with devices. Mirrors lock state plus `locked_at` / `unlocked_at`.
 
-**audit_logs** — REGISTER, LOCK_TO_APP, UNLOCK_ALL. `admin_id` is null for device-originated register.
+**device_allowlist** — packages allowed while the device is locked.
+
+**device_web_allowlist** — website URL prefixes allowed while locked.
+
+**app_usage_sessions** — screen-time sessions reported by the agent.
+
+**settings** — key/value store (e.g. uninstall PIN).
+
+**audit_logs** — REGISTER, SET_ALLOWLIST, UNLOCK_ALL, etc. `admin_id` is null for device-originated events.
 
 ## Indexes
 

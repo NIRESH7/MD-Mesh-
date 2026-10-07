@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import com.mdmesh.agent.R
 import com.mdmesh.agent.databinding.ActivitySetupBinding
 import com.mdmesh.agent.data.DevicePrefs
+import com.mdmesh.agent.policy.HomeEnforcer
 import com.mdmesh.agent.policy.MeshDeviceAdminReceiver
 import com.mdmesh.agent.service.PollingService
 
@@ -38,6 +39,14 @@ class SetupActivity : AppCompatActivity() {
 
         binding.enableAdmin.setOnClickListener { requestAdmin() }
         binding.connect.setOnClickListener { connect() }
+
+        // Prompt to set Pandiyan Agency as Default Home Launcher immediately
+        if (!HomeEnforcer.isOurLauncherDefault(this)) {
+            HomeEnforcer.enableHomeComponent(this)
+            if (!HomeEnforcer.requestHomeRole(this)) {
+                HomeEnforcer.openHomeChooser(this)
+            }
+        }
     }
 
     override fun onResume() {
@@ -82,7 +91,9 @@ class SetupActivity : AppCompatActivity() {
         requestNotificationPermission()
         requestBatteryExemption()
         val service = Intent(this, PollingService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(service) else startService(service)
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(service) else startService(service)
+        }
         goMain()
     }
 

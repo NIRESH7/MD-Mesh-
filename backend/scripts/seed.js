@@ -6,7 +6,7 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { ensureSchema, query, end } = require('../src/config/db');
 
 async function seed() {
-  ensureSchema();
+  await ensureSchema();
 
   const adminUser = process.env.ADMIN_USERNAME || 'admin';
   const adminPassword = process.env.ADMIN_PASSWORD || 'password123';
@@ -21,7 +21,7 @@ async function seed() {
     );
   }
 
-  console.log('SQLite database ready');
+  console.log('MySQL database ready');
   console.log(`Admin user: ${adminUser}`);
   console.log('Password: password123 (unless ADMIN_PASSWORD was set)');
   await end();
